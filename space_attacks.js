@@ -1,0 +1,659 @@
+
+var frameWidth = 1200.0
+var frameHeight = 800.0
+var playingAreaWidth = 1200.0
+var playingAreaHeight = 760.0
+var frameRate = 60
+var frameInterval = Math.round(1000/frameRate);
+var frameCounter = 0;
+var maxFrameCount = 1000000000
+var windowScaling = 1.0
+var tinyFloat = 0.0000001
+
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+ctx.fillStyle = "#FFFFFF";
+
+var secondsToTicks = function(s){
+    return s*frameRate;
+}
+
+var drawBackground = function(context, backgrounds, gameSequence){
+    var level = gameSequence.getLevel();
+    if (level != 0)
+        backgrounds[level].draw();
+}
+
+var vectorToDirection = function(v){
+    var a = v.angle_rad();
+    if (a > -Math.PI/8 && a < Math.PI/8)
+        var direction = 'r';
+    else if (a > Math.PI/8 && a < Math.PI*3.0/8)
+        var direction = 'ur';
+    else if (a > Math.PI*3.0/8 && a < Math.PI*5.0/8)
+        var direction = 'u';
+    else if (a > Math.PI*5.0/8 && a < Math.PI*7.0/8)
+        var direction = 'ul';
+    else if (a > Math.PI*7.0/8 || a < -Math.PI*7.0/8)
+        var direction = 'l';
+    else if (a > -Math.PI*7.0/8 && a < -Math.PI*5.0/8)
+        var direction = 'dl';
+    else if (a > -Math.PI*5.0/8 && a < -Math.PI*3.0/8)
+        var direction = 'd';
+    else if (a > -Math.PI*3.0/8 && a < -Math.PI*1.0/8)
+        var direction = 'dr';
+    else
+        var direction = 'ur'; //default
+    return direction;
+};
+
+/* Keyboard Input */
+
+var keycodes = {
+    "KEYUP": 38
+  , "KEYDOWN": 40
+  , "KEYLEFT": 37
+  , "KEYRIGHT": 39
+  , "KEYSPACE": 32
+};
+
+var keystates = {
+    "KEYUP": false
+  , "KEYDOWN": false
+  , "KEYLEFT": false
+  , "KEYRIGHT": false
+  , "KEYSPACE": false
+};
+
+var keyeventtimes ={
+    "KEYUP": 0
+  , "KEYDOWN": 0
+  , "KEYLEFT": 0
+  , "KEYRIGHT": 0
+  , "KEYSPACE": 0
+};
+
+var onkeydown = function(event){
+    for (var key in keycodes){
+        if(keycodes[key] == event.which){
+            if(!keystates[key]){
+                keystates[key] = true;
+                keyeventtimes[key] = frameCounter;
+            }
+            event.preventDefault();
+            return;
+        }
+    }
+};
+
+var onkeyup = function(event){
+    for (var key in keycodes){
+        if(keycodes[key] == event.which){
+            keystates[key] = false;
+            return;
+        }
+    }
+};
+
+$("input").keydown(onkeydown);
+$("input").keyup(onkeyup);
+
+/* ----------- */
+
+/* GameSequenceEntry */
+
+var GameSequenceEntry = function (enemies, prepause){
+    this.enemies = enemies;
+    this.prepause = prepause;
+    this.postpause = 0;
+    this.state = 'unstarted';
+};
+
+GameSequenceEntry.prototype.action = function(gameElements){
+    if (this.state == 'unstarted'){
+        this.state = 'prepause';
+        this.lastActionTime = frameCounter;
+    }
+    else if (this.state == 'prepause' && this.timeHasElapsed(this.prepause)){
+        this.state = 'waitenemies';
+        for (var e in this.enemies)
+            gameElements.push(e);
+        this.lastActionTime = frameCounter;
+    }
+    else if (this.state == 'waitenemies' && noEnemyShips(gameElements)){
+        this.state = 'postpause';
+        this.lastActionTime = frameCounter;
+    }
+    else if (this.state == 'postpause' && this.timeHasElapsed(this.postpause)){
+        this.state = 'complete';
+        this.lastActionTime = frameCounter;
+    }
+};
+      
+GameSequenceEntry.prototype.stageComplete = function(){
+    return this.state == 'complete';
+};
+
+GameSequenceEntry.prototype.timeHasElapsed = function(t){
+    return (frameCounter - this.lastActionTime > t)
+}
+    
+/* ----------------- GameSequenceEntry */
+
+/* GameSequence */
+
+var GameSequence = function (level, stage) {
+    this.level = level;
+    this.stage = stage;
+    this.sequence = [];
+    this.sequence.push([]);
+};
+
+GameSequence.prototype.action = function(gameElements){
+    this.sequence[this.level][this.stage].action(gameElements);
+};
+
+GameSequence.prototype.advanceStage = function() {
+    if (this.stage+1 < this.sequence[this.level].length) {
+        this.stage += 1;
+    }
+    else if (this.level+1 < this.sequence.length) {
+        this.level += 1;
+        this.stage = 0;
+    }
+    else{
+        this.level = 0;
+        this.stage = 0;
+    }
+};
+
+GameSequence.prototype.stageComplete = function() {
+    return this.sequence[this.level][this.stage].stageComplete();
+};
+
+GameSequence.prototype.getLevel = function() {
+    return this.level;
+};
+
+GameSequence.prototype.addStage = function(l, s, gse) {
+    if (this.sequence.length < l)
+        throw "Invalid game sequence construction";
+    else if (this.sequence.length == l)
+        this.sequence.push([]);
+    if (this.sequence[l].length != s)
+        throw "Invalid game sequence construction";
+    this.sequence[l].push(gse);
+};
+
+/* ---------- GameSequence */
+
+/* Sprite */
+
+var Sprite = function (ctx, loaders, imgsrc, width, height) {
+    this.context = ctx;
+    this.imageSource = imgsrc;
+    this.width = width;
+    this.height = height;
+    this.deferred = $.Deferred();
+    this.image = new Image();
+    var thisobj = this;
+    this.image.onload = function() {
+        thisobj.deferred.resolve();
+    };
+    this.image.src = imgsrc;
+    loaders.push(this.deferred.promise());
+};
+
+Sprite.prototype.draw = function (x, y){
+    this.context.drawImage(
+        this.image
+      , x*windowScaling
+      , y*windowScaling
+      , this.width*windowScaling
+      , this.height*windowScaling
+    );
+};
+
+/* ---------- Sprite */
+
+/* Load sprites */
+
+var loaders = [];
+
+var backgroundSprites = {
+    1: new Sprite(ctx, loaders, "sprites/space.GIF", 1200, 760)
+  , 2: new Sprite(ctx, loaders, "sprites/overearth.GIF", 1200, 760)
+}
+
+var dashSprites = {
+    'hdiv' : new Sprite(ctx, loaders, "sprites/ship/dash/dashbar.GIF", 1200, 40)
+  , 'vdiv' : new Sprite(ctx, loaders, "sprites/ship/dash/divide.GIF", 11, 27)
+};
+
+var shipSprites = {
+    'dl'    : new Sprite(ctx, loaders, "sprites/ship/shipdl.png", 50, 50)
+  , 'd'     : new Sprite(ctx, loaders, "sprites/ship/shipd.png", 50, 50)
+  , 'dr'    : new Sprite(ctx, loaders, "sprites/ship/shipdr.png", 50, 50)
+  , 'r'     : new Sprite(ctx, loaders, "sprites/ship/shipr.png", 50, 50)
+  , 'ur'    : new Sprite(ctx, loaders, "sprites/ship/shipur.png", 50, 50)
+  , 'u'     : new Sprite(ctx, loaders, "sprites/ship/shipu.png", 50, 50)
+  , 'ul'    : new Sprite(ctx, loaders, "sprites/ship/shipul.png", 50, 50)
+  , 'l'     : new Sprite(ctx, loaders, "sprites/ship/shipl.png", 50, 50)
+  , 'hitdl' : new Sprite(ctx, loaders, "sprites/ship/hitshipdl.GIF", 50, 50)
+  , 'hitd'  : new Sprite(ctx, loaders, "sprites/ship/hitshipd.GIF", 50, 50)
+  , 'hitdr' : new Sprite(ctx, loaders, "sprites/ship/hitshipdr.GIF", 50, 50)
+  , 'hitr'  : new Sprite(ctx, loaders, "sprites/ship/hitshipr.GIF", 50, 50)
+  , 'hitur' : new Sprite(ctx, loaders, "sprites/ship/hitshipur.GIF", 50, 50)
+  , 'hitu'  : new Sprite(ctx, loaders, "sprites/ship/hitshipu.GIF", 50, 50)
+  , 'hitul' : new Sprite(ctx, loaders, "sprites/ship/hitshipul.GIF", 50, 50)
+  , 'hitl'  : new Sprite(ctx, loaders, "sprites/ship/hitshipl.GIF", 50, 50)
+};
+
+var bulletSprites = {
+    'bullet' : new Sprite(ctx, loaders, "sprites/bullet.GIF", 12, 12)
+};
+
+var resourcesLoaded = false;
+$.when.apply(null, loaders).done(function() {
+    resourcesLoaded = true;
+});
+
+/* ------------ */
+
+/* Drawable */
+
+var Drawable = function (context, position, radius, sprites, frameCoords){
+    this.context = context;
+    this.position = position;
+    this.radius = radius;
+    this.sprites = sprites;
+    this.frameCoords = frameCoords;
+    this.shakeCount = 0;
+    this.shakeRadius = 5;
+    this.active = true;
+};
+
+Drawable.prototype.draw = function(spritename){
+    if (typeof(spritename)==='undefined')
+        var s = this.sprites[Object.keys(this.sprites)[0]];
+    else
+        var s = this.sprites[spritename];
+    if (this.frameCoords)
+        var h = frameHeight;
+    else
+        var h = playingAreaHeight;
+    if (this.shakeCount > 0){
+        var actual_x = this.position.get_x() - this.shakeRadius + (Math.random()*this.shakeRadius*2);
+        var actual_y = this.position.get_y() - this.shakeRadius + (Math.random()*this.shakeRadius*2);
+    }
+    else{
+        actual_x = this.position.get_x();
+        actual_y = this.position.get_y();
+    }
+
+    s.draw(Math.round(actual_x - this.radius), h - Math.round(actual_y + this.radius));
+
+    if (this.shakeCount > 0)
+      this.shakeCount -= 1;
+}
+
+/* --------- Drawable */
+
+/* Make backgrounds */
+
+var backgrounds = {
+    1: new Drawable(ctx, new Vector(0, frameHeight), 0, {'bg': backgroundSprites[1]}, true)
+  , 2: new Drawable(ctx, new Vector(0, frameHeight), 0, {'bg': backgroundSprites[2]}, true)
+};
+
+/* ---------- */
+
+/* Dashboard */
+
+var Dashboard = function(context, ship, sprites){
+    this.context = context;
+    this.ship = ship;
+    this.hdiv = new Drawable(context, new Vector(0, 40), 0, {'hdiv': sprites.hdiv}, true);
+    this.vdivs = [
+        new Drawable(context, new Vector(180, 27), 0, {'vdiv': sprites.vdiv}, true)
+      , new Drawable(context, new Vector(360, 27), 0, {'vdiv': sprites.vdiv}, true)
+      , new Drawable(context, new Vector(540, 27), 0, {'vdiv': sprites.vdiv}, true)
+    ];
+    //self.font = pygame.font.SysFont("monospace", toint(winHeight*0.02), bold=True)
+};
+
+Dashboard.prototype.draw = function() {
+    var elems = [this.hdiv].concat(this.vdivs)
+    for (var i = 0; i < elems.length; i++){
+        elems[i].draw();
+    }
+    this.context.fillStyle = "#FF0000";
+    ctx.font = Math.round(19*windowScaling) + "px Courier";
+    //label = self.font.render("Health: " + str(int(self.ship.getHealth())), 1, (255,0,0))
+    this.context.fillText("Health: 100",10*windowScaling,(frameHeight-10)*windowScaling);
+    //label = self.font.render("Speed: " + str(int(self.ship.getSpeed())), 1, (255,0,0))
+    //screen.blit(label, (winWidth*(0.15 + 0.0125 + 0.015), winHeight*(1 - 0.025)))
+    //label = self.font.render("Score: " + str(int(self.ship.getScore())), 1, (255,0,0))
+    //screen.blit(label, (winWidth*(0.3 + 0.0125 + 0.015), winHeight*(1 - 0.025)))
+};
+    
+var dash = new Dashboard(ctx, null, dashSprites);
+
+/* ------------ Dashboard */
+
+/* Craft */
+
+var Craft = function(context, position, velocity, health, radius, sprites){
+    Drawable.prototype.constructor.call(this, context, position, radius, sprites)
+    this.velocity = velocity
+    this.health = health
+    this.shielded = 0
+    this.mass = 100
+};
+
+Craft.prototype = new Drawable();
+Craft.prototype.constructor = Craft;
+
+Craft.prototype.draw = function(direction, prefix){
+    if (typeof(direction)==='undefined'){
+      var a = this.velocity.angle_rad();
+      if (a > -Math.PI/8 && a < Math.PI/8)
+        var direction = 'r';
+      else if (a > Math.PI/8 && a < Math.PI*3.0/8)
+        var direction = 'ur';
+      else if (a > Math.PI*3.0/8 && a < Math.PI*5.0/8)
+        var direction = 'u';
+      else if (a > Math.PI*5.0/8 && a < Math.PI*7.0/8)
+        var direction = 'ul';
+      else if (a > Math.PI*7.0/8 && a < -Math.PI*7.0/8)
+        var direction = 'l';
+      else if (a > -Math.PI*7.0/8 && a < -Math.PI*5.0/8)
+        var direction = 'dl';
+      else if (a > -Math.PI*5.0/8 && a < -Math.PI*3.0/8)
+        var direction = 'd';
+      else if (a > -Math.PI*3.0/8 && a < -Math.PI*1.0/8)
+        var direction = 'dr';
+    }
+
+    if (typeof(prefix)==='undefined')
+        prefix = '';
+
+    if (this.shakeCount > 0)
+      prefix = 'hit' + prefix;
+    Drawable.prototype.draw.call(this, prefix + direction);
+};
+
+Craft.prototype.updatePosition = function() {
+    this.position = this.position.add(this.velocity);
+};
+
+Craft.prototype.update = function(gameElements, controlElements){
+    this.updatePosition();
+};
+
+Craft.prototype.getHealth = function(){
+    return this.health;
+};
+
+Craft.prototype.getSpeed = function(){
+    return Math.round(this.velocity.magnitude());
+};
+
+Craft.prototype.getType = function(){
+    return 'craft';
+};
+
+Craft.prototype.damage = function(d, safeperiod){
+    if (!this.shielded){
+        this.shielded = safeperiod;
+        this.shake(safeperiod);
+        this.health = Math.max(0, self.health - d);
+        if (this.health <= 0)
+            this.markInactive();
+    }
+};
+
+Craft.prototype.onremoval = function(elementsToPush){
+    //elementsToPush.push(Explosion(this.context, this.position));
+};
+
+/* ------ Craft */
+
+/* Bullet */
+
+var Bullet = function(owner, context, position, velocity, radius, sprites, power){
+    Drawable.prototype.constructor.call(this, context, position, radius, sprites);
+    this.owner = owner
+    this.velocity = velocity
+    this.power = power
+}
+
+Bullet.prototype = new Drawable();
+Bullet.prototype.constructor = Bullet;
+
+Bullet.prototype.update = function(gameElements, controlElements){
+    this.position = this.position.add(this.velocity);
+}
+
+Bullet.prototype.draw = function(){
+    Drawable.prototype.draw.call(this);
+}
+
+Bullet.prototype.getType = function(){
+    return (this.owner.getType() + 'bullet');
+}
+
+/* ------ Bullet */
+    
+
+/* Ship */
+
+var Ship = function(context, radius, sprites, bulletRadius, bulletSprites){
+    Craft.prototype.constructor.call(this, context, new Vector(playingAreaWidth/2, playingAreaHeight/2), 
+      new Vector(0, 0), 100, radius, sprites);
+    this.key_sensitivity = 0.1;
+    this.resistance = 0.008;
+    this.forces = new Vector(0, 0);
+    this.fireFrequency = frameRate;
+    this.bulletRadius = bulletRadius;
+    this.bulletSprites = bulletSprites;
+    this.bulletPower = 1;
+    this.direction = (new Vector(1, 0)).unit_vector();
+    this.bulletSpeed = 15;
+    this.score = 0;
+    this.acceleration=0.5;
+    this.impactdamage = 2;
+};
+
+Ship.prototype = new Craft();
+Ship.prototype.constructor = Ship;
+
+var transkeystates = {
+    "KEYUP": [false, 0]
+  , "KEYDOWN": [false, 0]
+  , "KEYLEFT": [false, 0]
+  , "KEYRIGHT": [false, 0]
+};
+
+Ship.prototype.updateDirection = function(){
+
+    if ( transkeystates["KEYUP"][1] == 1 
+      || transkeystates["KEYDOWN"][1] == 1
+      || transkeystates["KEYLEFT"][1] == 1
+      || transkeystates["KEYRIGHT"][1] == 1){
+        transkeystates["KEYUP"] = [keystates["KEYUP"], 0];
+        transkeystates["KEYDOWN"] = [keystates["KEYDOWN"], 0];
+        transkeystates["KEYLEFT"] = [keystates["KEYLEFT"], 0];
+        transkeystates["KEYRIGHT"] = [keystates["KEYRIGHT"], 0];
+    }
+
+    for (var tk in transkeystates) {
+        if(!transkeystates.hasOwnProperty(tk)) continue; 
+        if(transkeystates[tk][1] > 1)
+            transkeystates[tk][1] = transkeystates[tk][1] - 1;
+        else if(keystates[tk] != transkeystates[tk][0])
+            transkeystates[tk][1] = 2;
+    }
+    
+    if ( transkeystates["KEYUP"][0] 
+      || transkeystates["KEYDOWN"][0] 
+      || transkeystates["KEYLEFT"][0] 
+      || transkeystates["KEYRIGHT"][0]){
+        var x = 0;
+        var y = 0;
+        if (transkeystates["KEYUP"][0])
+            y = 1.0;
+        else if (transkeystates["KEYDOWN"][0])
+            y = -1.0;
+        if (transkeystates["KEYRIGHT"][0])
+            x = 1.0;
+        else if (transkeystates["KEYLEFT"][0])
+            x = -1.0;
+        this.direction = (new Vector(x, y)).unit_vector();
+    }
+};
+
+Ship.prototype.updateForces = function(){
+    f = new Vector(0, 0);
+    if (keystates["KEYUP"])
+        f.y = 1;
+    else if (keystates["KEYDOWN"])
+        f.y = -1;
+    if (keystates["KEYRIGHT"])
+        f.x = 1;
+    else if (keystates["KEYLEFT"])
+        f.x = -1;
+    this.forces = f.unit_vector();
+};
+
+Ship.prototype.updateVelocity = function(){
+    this.velocity = this.velocity.add(this.forces.scale(this.acceleration));
+    this.velocity = this.velocity.sub(this.velocity.scale(this.resistance));
+};
+
+Ship.prototype.updatePosition = function(){
+    Craft.prototype.updatePosition.call(this);
+    if (this.position.get_x() < 0)
+        this.position.x = playingAreaWidth;
+    if (this.position.get_x() > playingAreaWidth)
+        this.position.x = 0;
+    if (this.position.get_y() < 0)
+        this.position.y = playingAreaHeight;
+    if (this.position.get_y() > playingAreaHeight)
+      this.position.y = 0;
+};
+
+Ship.prototype.fire = function(gameElements){
+    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites));
+};
+
+Ship.prototype.updateFire = function(){
+    if (keystates["KEYSPACE"]){
+        if (((frameCounter - keyeventtimes["KEYSPACE"])%maxFrameCount)%this.fireFrequency == 0)
+            this.fire(gameElements);
+    }
+};
+
+Ship.prototype.update = function(){
+    this.updateDirection();
+    this.updateForces();
+    this.updateVelocity();
+    this.updatePosition();
+    this.updateFire(gameElements);
+    if (this.shielded > 0)
+        this.shielded -= 1;
+};
+
+Ship.prototype.getScore = function(){
+    return this.score;
+}
+
+Ship.prototype.draw = function(){
+    Craft.prototype.draw.call(this, vectorToDirection(this.direction));
+}
+
+Ship.prototype.getType = function(){
+    return 'ship';
+}
+
+/* Build game sequence */
+
+var gameSequence = new GameSequence(1, 0);
+gameSequence.addStage(1, 0, new GameSequenceEntry([], secondsToTicks(200)));
+
+/* Create game elements */
+
+var gameElements = [];
+shipobj = new Ship(ctx, 25, shipSprites, 5, bulletSprites);
+gameElements.push(shipobj);
+
+/* -------- */
+
+var game = function(gameElements, gameSequence){
+
+    /* Update game element positions */
+    for(var i = 0; i < gameElements.length; i++){
+        gameElements[i].update();
+    }
+
+    /* Draw game elements */
+    for(var i = 0; i < gameElements.length; i++){
+        gameElements[i].draw();
+    }
+
+    /* Advance game sequence */
+    gameSequence.action(gameElements);
+    if (gameSequence.stageComplete())
+        gameSequence.advanceStage();
+};
+
+var mainloop = function() {
+
+    // Calculate scaling based on viewable area
+    if (window.innerHeight < frameHeight){
+        windowScaling = (window.innerHeight-10)/frameHeight;
+    }
+    
+    // Clear the screen
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0,0,frameWidth,frameHeight);
+
+    // Draw the background
+    drawBackground(ctx, backgrounds, gameSequence);
+
+    // Update and draw game elements
+    game(gameElements, gameSequence);
+
+    // Draw the dashboard
+    dash.draw();
+
+};
+
+var curTime = 0;
+var frames = 0
+
+var showFrameRate = function() {
+    var d = new Date();
+    var t = Math.floor(d.getTime()/1000);
+    if(t != curTime){
+        console.log(frames);
+        frames = 0;
+        curTime = t;
+    }
+    frames++;
+};
+
+var processing = false;
+setInterval(function(){
+    if(resourcesLoaded && !processing){
+        processing = true;
+        mainloop();
+        frameCounter = (frameCounter+1)%maxFrameCount;
+        processing = false;
+        showFrameRate();
+    }
+    else if(processing){
+        console.log("Can't achieve framerate");
+    }
+}, frameInterval);
+
