@@ -12,3 +12,5 @@ I've only really done the initial work of porting it so far, working out how
 to do the drawing and get keyboard input. I'm not even sure it really works
 cross-platform as I haven't been able to test it properly. Let me know if 
 you've tried it and it doesn't work!
+
+See how far I've gotten at https://nedm2.github.io/astromania/
