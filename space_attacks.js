@@ -273,7 +273,24 @@ var Drawable = function (context, position, radius, sprites, frameCoords){
     this.active = true;
 };
 
+Drawable.prototype.inPlayingArea = function(){
+    if(this.position.get_x() < 0) return false;
+    if(this.position.get_y() < 0) return false;
+    if(this.position.get_x() > playingAreaWidth)  return false;
+    if(this.position.get_y() > playingAreaHeight) return false;
+    return true;
+}
+
+Drawable.prototype.isActive = function(){
+    return true;
+}
+
 Drawable.prototype.draw = function(spritename){
+
+    /* Don't draw if outside the playing area */
+    if(!this.frameCoords && !this.inPlayingArea())
+            return;
+
     if (typeof(spritename)==='undefined')
         var s = this.sprites[Object.keys(this.sprites)[0]];
     else
@@ -443,6 +460,10 @@ Bullet.prototype.getType = function(){
     return (this.owner.getType() + 'bullet');
 }
 
+Bullet.prototype.isActive = function(){
+    return this.inPlayingArea();
+}
+
 /* ------ Bullet */
     
 
@@ -592,9 +613,13 @@ gameElements.push(shipobj);
 var game = function(gameElements, gameSequence){
 
     /* Update game element positions */
+    var newGameElements = [];
     for(var i = 0; i < gameElements.length; i++){
         gameElements[i].update();
+        if(gameElements[i].isActive())
+            newGameElements.push(gameElements[i]);
     }
+    gameElements = newGameElements;
 
     /* Draw game elements */
     for(var i = 0; i < gameElements.length; i++){
