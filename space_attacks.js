@@ -675,7 +675,7 @@ setInterval(function(){
         mainloop();
         frameCounter = (frameCounter+1)%maxFrameCount;
         processing = false;
-        showFrameRate();
+        //showFrameRate();
     }
     else if(processing){
         console.log("Can't achieve framerate");
