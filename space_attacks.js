@@ -340,6 +340,10 @@ Drawable.prototype.shake = function(c){
     this.shakeCount = c;
 }
 
+Drawable.prototype.markInactive = function(){
+    this.active = false;
+}
+
 /* --------- Drawable */
 
 /* Make backgrounds */
@@ -444,7 +448,7 @@ Craft.prototype.damage = function(d, safeperiod){
     if (!this.shielded){
         this.shielded = safeperiod;
         this.shake(safeperiod);
-        this.health = Math.max(0, self.health - d);
+        this.health = Math.max(0, this.health - d);
         if (this.health <= 0)
             this.markInactive();
     }
@@ -487,10 +491,6 @@ Bullet.prototype.isActive = function(){
 
 Bullet.prototype.isFriendlyFire = function(){
     return !this.enemyfire;
-}
-
-Bullet.prototype.markInactive = function(){
-    this.active = false;
 }
 
 /* ------ Bullet */
@@ -594,7 +594,7 @@ Ship.prototype.updatePosition = function(){
 };
 
 Ship.prototype.fire = function(gameElements){
-    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites, false));
+    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites, 1, false));
 };
 
 Ship.prototype.updateFire = function(){
@@ -649,7 +649,7 @@ Pawn.prototype.update = function(gameElements, controlElements){
         this.position = this.initialposition
     }
     if(this.shielded > 0)
-        self.shielded -= 1
+        this.shielded -= 1
 }
 
 Pawn.prototype.isEnemyCraft = function(){
