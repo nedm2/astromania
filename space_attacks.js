@@ -669,8 +669,18 @@ var noEnemyShips = function(gameElems){
 /* Build game sequence */
 
 var gameSequence = new GameSequence(1, 0);
+
+/* -- pre pause */
 gameSequence.addStage(1, 0, new GameSequenceEntry([], secondsToTicks(2)));
-gameSequence.addStage(1, 1, new GameSequenceEntry([new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 125), new Vector(3,0), 1)], secondsToTicks(0)));
+
+/* -- 4 streght0 pawns */
+var enem = [
+    new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 1*(playingAreaHeight/5)), new Vector(3,0), 3)
+  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 2*(playingAreaHeight/5)), new Vector(3,0), 3)
+  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 3*(playingAreaHeight/5)), new Vector(3,0), 3)
+  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 4*(playingAreaHeight/5)), new Vector(3,0), 3)
+];
+gameSequence.addStage(1, 1, new GameSequenceEntry(enem, secondsToTicks(0)));
 
 /* Create game elements */
 
