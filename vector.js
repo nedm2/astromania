@@ -44,3 +44,7 @@ Vector.prototype.unit_vector = function(){
 Vector.prototype.repr = function() {
     return this.x.toString() + "," + this.y.toString();
 };
+
+Vector.prototype.distance = function(other){
+    return Math.sqrt((this.x - other.x)**2 + (this.y - other.y)**2)
+}

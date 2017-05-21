@@ -464,11 +464,12 @@ Craft.prototype.onremoval = function(elementsToPush){
 
 /* Bullet */
 
-var Bullet = function(owner, context, position, velocity, radius, sprites, power){
+var Bullet = function(owner, context, position, velocity, radius, sprites, power, enemyfire){
     Drawable.prototype.constructor.call(this, context, position, radius, sprites);
     this.owner = owner
     this.velocity = velocity
     this.power = power
+    this.enemyfire = enemyfire
 }
 
 Bullet.prototype = new Drawable();
@@ -487,7 +488,15 @@ Bullet.prototype.getType = function(){
 }
 
 Bullet.prototype.isActive = function(){
-    return this.inPlayingArea();
+    return this.active && this.inPlayingArea();
+}
+
+Bullet.prototype.isFriendlyFire = function(){
+    return !this.enemyfire;
+}
+
+Bullet.prototype.markInactive = function(){
+    this.active = false;
 }
 
 /* ------ Bullet */
@@ -591,7 +600,7 @@ Ship.prototype.updatePosition = function(){
 };
 
 Ship.prototype.fire = function(gameElements){
-    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites));
+    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites, false));
 };
 
 Ship.prototype.updateFire = function(){
@@ -674,6 +683,56 @@ gameSequence.addStage(1, 1, new GameSequenceEntry([new Pawn(ctx, 22, pawn0Sprite
 var gameElements = [];
 shipobj = new Ship(ctx, 25, shipSprites, 5, bulletSprites);
 gameElements.push(shipobj);
+    
+var dash = new Dashboard(ctx, shipobj, dashSprites);
+
+/* -------- */
+
+/* Collisions */
+    
+var collisions = function(gameElements){
+    var elementsToPop = []
+    var elementsToPush = []
+    for (var i = 0; i < gameElements.length; i++){
+        for (var j = 1; j < gameElements.length; j++){
+            if (i != j){
+                ge1 = gameElements[i];
+                ge2 = gameElements[j];
+                if(ge1.position.distance(ge2.position) < (ge1.radius + ge2.radius)){
+                    /* Is a collision, decide what to do */
+
+                    /* ship bullet and pawn */
+                    if ((ge1.isFriendlyFire() || ge2.isFriendlyFire()) && (ge1.isEnemyCraft() || ge2.isEnemyCraft())){
+                        if (ge1.isEnemyCraft()) { var pawn = ge1; var bullet = ge2; }
+                        else                    { var pawn = ge2; var bullet = ge1; }
+                        pawn.damage(bullet.power, secondsToTicks(1));
+                        bullet.markInactive();
+                    }
+
+                    /* ship and pawn */
+                }
+            }
+        }
+    }
+    //for i1 in range(len(gameElements)-1):
+    //  for i2 in range(i1+1, len(gameElements)):
+    //    k1 = gameElements.keys()[i1]
+    //    k2 = gameElements.keys()[i2]
+    //    ge1 = gameElements[k1]
+    //    ge2 = gameElements[k2]
+    //    if ge1.position.distance(ge2.position) < (ge1.radius + ge2.radius):
+    //      if ('shipbullet' in (ge1.getType(),ge2.getType())) and ('pawn' in (ge1.getType(),ge2.getType())):
+    //        (pawnkey, pawn, bulletkey, bullet) = (k1, ge1, k2, ge2) if ge1.getType() == 'pawn' else (k2, ge2, k1, ge1)
+    //        pawn.damage(bullet.power, secondsToTicks(1))
+    //        bullet.markInactive()
+    //      elif ('ship' in (ge1.getType(),ge2.getType())) and ('pawn' in (ge1.getType(),ge2.getType())):
+    //        (ship, pawn) = (ge1, ge2) if ge1.getType() == 'ship' else (ge2, ge1)
+    //        ship.damage(ship.impactdamage, secondsToTicks(1))
+    //        momentum(ship, pawn)
+    //for elem in elementsToPop:
+    //  gameElements.pop(elem)
+    //gameElements.update(elementsToPush)
+}
 
 /* -------- */
 
@@ -711,6 +770,9 @@ var gameloop = function() {
             newGameElements.push(gameElements[i]);
     }
     gameElements = newGameElements;
+
+    /* Check for collisions */
+    collisions(gameElements)
 
     /* Advance game sequence */
     gameSequence.action(gameElements);
