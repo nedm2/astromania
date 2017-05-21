@@ -378,6 +378,7 @@ Dashboard.prototype.draw = function() {
     this.context.fillText("Health: "+this.ship.health,10*windowScaling,(frameHeight-10)*windowScaling);
     this.context.fillText("Speed: "+Math.ceil(this.ship.velocity.magnitude()*3),200*windowScaling,(frameHeight-10)*windowScaling);
     this.context.fillText("Score: "+this.ship.score,380*windowScaling,(frameHeight-10)*windowScaling);
+    this.context.fillText("Control with arrow keys and spacebar",560*windowScaling,(frameHeight-10)*windowScaling);
 };
 
 /* ------------ Dashboard */
