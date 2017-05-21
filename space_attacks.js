@@ -3,9 +3,12 @@ var frameWidth = 1200.0
 var frameHeight = 800.0
 var playingAreaWidth = 1200.0
 var playingAreaHeight = 760.0
-var frameRate = 60
+var frameRate = 30
 var frameInterval = Math.round(1000/frameRate);
+var gameRate = 60
+var gameInterval = Math.round(1000/gameRate);
 var frameCounter = 0;
+var gameCounter = 0;
 var maxFrameCount = 1000000000
 var windowScaling = 1.0
 var tinyFloat = 0.0000001
@@ -15,7 +18,7 @@ var ctx = c.getContext("2d");
 ctx.fillStyle = "#FFFFFF";
 
 var secondsToTicks = function(s){
-    return s*frameRate;
+    return s*gameRate;
 }
 
 var drawBackground = function(context, backgrounds, gameSequence){
@@ -78,7 +81,7 @@ var onkeydown = function(event){
         if(keycodes[key] == event.which){
             if(!keystates[key]){
                 keystates[key] = true;
-                keyeventtimes[key] = frameCounter;
+                keyeventtimes[key] = gameCounter;
             }
             event.preventDefault();
             return;
@@ -112,21 +115,21 @@ var GameSequenceEntry = function (enemies, prepause){
 GameSequenceEntry.prototype.action = function(gameElements){
     if (this.state == 'unstarted'){
         this.state = 'prepause';
-        this.lastActionTime = frameCounter;
+        this.lastActionTime = gameCounter;
     }
     else if (this.state == 'prepause' && this.timeHasElapsed(this.prepause)){
         this.state = 'waitenemies';
         for (var e in this.enemies)
             gameElements.push(e);
-        this.lastActionTime = frameCounter;
+        this.lastActionTime = gameCounter;
     }
     else if (this.state == 'waitenemies' && noEnemyShips(gameElements)){
         this.state = 'postpause';
-        this.lastActionTime = frameCounter;
+        this.lastActionTime = gameCounter;
     }
     else if (this.state == 'postpause' && this.timeHasElapsed(this.postpause)){
         this.state = 'complete';
-        this.lastActionTime = frameCounter;
+        this.lastActionTime = gameCounter;
     }
 };
       
@@ -135,7 +138,7 @@ GameSequenceEntry.prototype.stageComplete = function(){
 };
 
 GameSequenceEntry.prototype.timeHasElapsed = function(t){
-    return (frameCounter - this.lastActionTime > t)
+    return (gameCounter - this.lastActionTime > t)
 }
     
 /* ----------------- GameSequenceEntry */
@@ -475,7 +478,7 @@ var Ship = function(context, radius, sprites, bulletRadius, bulletSprites){
     this.key_sensitivity = 0.1;
     this.resistance = 0.008;
     this.forces = new Vector(0, 0);
-    this.fireFrequency = frameRate;
+    this.fireFrequency = gameRate;
     this.bulletRadius = bulletRadius;
     this.bulletSprites = bulletSprites;
     this.bulletPower = 1;
@@ -570,7 +573,7 @@ Ship.prototype.fire = function(gameElements){
 
 Ship.prototype.updateFire = function(){
     if (keystates["KEYSPACE"]){
-        if (((frameCounter - keyeventtimes["KEYSPACE"])%maxFrameCount)%this.fireFrequency == 0)
+        if (((gameCounter - keyeventtimes["KEYSPACE"])%maxFrameCount)%this.fireFrequency == 0)
             this.fire(gameElements);
     }
 };
@@ -610,29 +613,7 @@ gameElements.push(shipobj);
 
 /* -------- */
 
-var game = function(gameElements, gameSequence){
-
-    /* Update game element positions */
-    var newGameElements = [];
-    for(var i = 0; i < gameElements.length; i++){
-        gameElements[i].update();
-        if(gameElements[i].isActive())
-            newGameElements.push(gameElements[i]);
-    }
-    gameElements = newGameElements;
-
-    /* Draw game elements */
-    for(var i = 0; i < gameElements.length; i++){
-        gameElements[i].draw();
-    }
-
-    /* Advance game sequence */
-    gameSequence.action(gameElements);
-    if (gameSequence.stageComplete())
-        gameSequence.advanceStage();
-};
-
-var mainloop = function() {
+var drawloop = function() {
 
     // Calculate scaling based on viewable area
     if (window.innerHeight < frameHeight){
@@ -646,11 +627,31 @@ var mainloop = function() {
     // Draw the background
     drawBackground(ctx, backgrounds, gameSequence);
 
-    // Update and draw game elements
-    game(gameElements, gameSequence);
+    /* Draw game elements */
+    for(var i = 0; i < gameElements.length; i++){
+        gameElements[i].draw();
+    }
 
     // Draw the dashboard
     dash.draw();
+
+};
+
+var gameloop = function() {
+
+    /* Update game element positions */
+    var newGameElements = [];
+    for(var i = 0; i < gameElements.length; i++){
+        gameElements[i].update();
+        if(gameElements[i].isActive())
+            newGameElements.push(gameElements[i]);
+    }
+    gameElements = newGameElements;
+
+    /* Advance game sequence */
+    gameSequence.action(gameElements);
+    if (gameSequence.stageComplete())
+        gameSequence.advanceStage();
 
 };
 
@@ -668,17 +669,30 @@ var showFrameRate = function() {
     frames++;
 };
 
-var processing = false;
+var drawprocessing = false;
 setInterval(function(){
-    if(resourcesLoaded && !processing){
-        processing = true;
-        mainloop();
+    if(resourcesLoaded && !drawprocessing){
+        drawprocessing = true;
+        drawloop();
         frameCounter = (frameCounter+1)%maxFrameCount;
-        processing = false;
-        //showFrameRate();
+        drawprocessing = false;
+        showFrameRate();
     }
-    else if(processing){
-        console.log("Can't achieve framerate");
+    else if(drawprocessing){
+        console.log("Can't achieve draw framerate");
     }
 }, frameInterval);
 
+var gameprocessing = false;
+setInterval(function(){
+    if(resourcesLoaded && !gameprocessing){
+        gameprocessing = true;
+        gameloop();
+        gameCounter = (gameCounter+1)%maxFrameCount;
+        gameprocessing = false;
+        //showFrameRate();
+    }
+    else if(gameprocessing){
+        console.log("Can't achieve game framerate");
+    }
+}, gameInterval);
