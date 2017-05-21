@@ -362,7 +362,6 @@ var Dashboard = function(context, ship, sprites){
       , new Drawable(context, new Vector(360, 27), 0, {'vdiv': sprites.vdiv}, true)
       , new Drawable(context, new Vector(540, 27), 0, {'vdiv': sprites.vdiv}, true)
     ];
-    //self.font = pygame.font.SysFont("monospace", toint(winHeight*0.02), bold=True)
 };
 
 Dashboard.prototype.draw = function() {
@@ -372,14 +371,9 @@ Dashboard.prototype.draw = function() {
     }
     this.context.fillStyle = "#FF0000";
     ctx.font = Math.round(19*windowScaling) + "px monospace";
-    //label = self.font.render("Health: " + str(int(self.ship.getHealth())), 1, (255,0,0))
     this.context.fillText("Health: "+this.ship.health,10*windowScaling,(frameHeight-10)*windowScaling);
     this.context.fillText("Speed: "+Math.ceil(this.ship.velocity.magnitude()*3),200*windowScaling,(frameHeight-10)*windowScaling);
     this.context.fillText("Score: "+this.ship.score,380*windowScaling,(frameHeight-10)*windowScaling);
-    //label = self.font.render("Speed: " + str(int(self.ship.getSpeed())), 1, (255,0,0))
-    //screen.blit(label, (winWidth*(0.15 + 0.0125 + 0.015), winHeight*(1 - 0.025)))
-    //label = self.font.render("Score: " + str(int(self.ship.getScore())), 1, (255,0,0))
-    //screen.blit(label, (winWidth*(0.3 + 0.0125 + 0.015), winHeight*(1 - 0.025)))
 };
 
 /* ------------ Dashboard */
