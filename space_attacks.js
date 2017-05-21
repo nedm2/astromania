@@ -299,6 +299,14 @@ Drawable.prototype.isActive = function(){
     return true;
 }
 
+Drawable.prototype.isFriendlyFire = function(){
+    return false;
+}
+
+Drawable.prototype.isEnemyCraft = function(){
+    return false;
+}
+
 Drawable.prototype.draw = function(spritename){
 
     /* Don't draw if outside the playing area */
@@ -326,6 +334,10 @@ Drawable.prototype.draw = function(spritename){
 
     if (this.shakeCount > 0)
       this.shakeCount -= 1;
+}
+
+Drawable.prototype.shake = function(c){
+    this.shakeCount = c;
 }
 
 /* --------- Drawable */
