@@ -806,7 +806,7 @@ setInterval(function(){
         drawloop();
         frameCounter = (frameCounter+1)%maxFrameCount;
         drawprocessing = false;
-        showFrameRate();
+        //showFrameRate();
     }
     else if(drawprocessing){
         console.log("Can't achieve draw framerate");
