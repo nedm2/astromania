@@ -119,8 +119,8 @@ GameSequenceEntry.prototype.action = function(gameElements){
     }
     else if (this.state == 'prepause' && this.timeHasElapsed(this.prepause)){
         this.state = 'waitenemies';
-        for (var e in this.enemies)
-            gameElements.push(e);
+        for (var i = 0; i < this.enemies.length; i++)
+            gameElements.push(this.enemies[i]);
         this.lastActionTime = gameCounter;
     }
     else if (this.state == 'waitenemies' && noEnemyShips(gameElements)){
@@ -251,6 +251,17 @@ var shipSprites = {
   , 'hitul' : new Sprite(ctx, loaders, "sprites/ship/hitshipul.GIF", 50, 50)
   , 'hitl'  : new Sprite(ctx, loaders, "sprites/ship/hitshipl.GIF", 50, 50)
 };
+
+var  pawn0Sprites = {
+    'd'    : new Sprite(ctx, loaders, "sprites/pawn/0/pawn0d.GIF", 40, 40)
+  , 'u'    : new Sprite(ctx, loaders, "sprites/pawn/0/pawn0u.GIF", 40, 40)
+  , 'r'    : new Sprite(ctx, loaders, "sprites/pawn/0/pawn0r.GIF", 40, 40)
+  , 'l'    : new Sprite(ctx, loaders, "sprites/pawn/0/pawn0l.GIF", 40, 40)
+  , 'hitd' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0d.GIF", 40, 40)
+  , 'hitu' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0u.GIF", 40, 40)
+  , 'hitr' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0r.GIF", 40, 40)
+  , 'hitl' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0l.GIF", 40, 40)
+}
 
 var bulletSprites = {
     'bullet' : new Sprite(ctx, loaders, "sprites/bullet.GIF", 12, 12)
@@ -600,10 +611,51 @@ Ship.prototype.getType = function(){
     return 'ship';
 }
 
+Ship.prototype.isEnemyCraft = function(){
+    return false;
+}
+
+/* ------ Ship */
+
+/* Pawn */
+
+var Pawn = function(context, radius, sprites, bulletRadius, bulletSprites, 
+      position = new Vector(playingAreaWidth/2, playingAreaHeight/2), velocity = new Vector(0, 0), health=100){
+    Craft.prototype.constructor.call(this, context, position, velocity, health, radius, sprites);
+    this.initialposition = position;
+}
+
+Pawn.prototype = new Craft();
+Pawn.prototype.constructor = Craft;
+
+Pawn.prototype.update = function(gameElements, controlElements){
+    Craft.prototype.update.call(this, gameElements, controlElements);
+    if(!this.inPlayingArea()){
+        this.position = this.initialposition
+    }
+    if(this.shielded > 0)
+        self.shielded -= 1
+}
+
+Pawn.prototype.isEnemyCraft = function(){
+    return true;
+}
+
+/* ------ Pawn */
+
+var noEnemyShips = function(gameElems){
+    for(var i = 0; i < gameElements.length; i++){
+        if(gameElements[i].isEnemyCraft())
+            return false;
+    }
+    return true
+}
+
 /* Build game sequence */
 
 var gameSequence = new GameSequence(1, 0);
-gameSequence.addStage(1, 0, new GameSequenceEntry([], secondsToTicks(200)));
+gameSequence.addStage(1, 0, new GameSequenceEntry([], secondsToTicks(2)));
+gameSequence.addStage(1, 1, new GameSequenceEntry([new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 125), new Vector(3,0), 1)], secondsToTicks(0)));
 
 /* Create game elements */
 
