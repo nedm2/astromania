@@ -1,0 +1,1 @@
+Shake count based on time, rather than frame count
