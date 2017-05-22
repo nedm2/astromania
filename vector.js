@@ -46,5 +46,5 @@ Vector.prototype.repr = function() {
 };
 
 Vector.prototype.distance = function(other){
-    return Math.sqrt((this.x - other.x)**2 + (this.y - other.y)**2)
+    return Math.sqrt(Math.pow(this.x - other.x, 2) + Math.pow(this.y - other.y, 2));
 }
