@@ -297,6 +297,7 @@ var Drawable = function (context, position, radius, sprites, frameCoords){
     this.shakeCount = 0;
     this.shakeRadius = 5;
     this.active = true;
+    this.zlayer = 0;
 };
 
 Drawable.prototype.inPlayingArea = function(){
@@ -496,6 +497,7 @@ Craft.prototype.destroy = function(){
     this.destroyed = true;
     this.explosionTime=gameCounter;
     this.velocity = new Vector(0,0);
+    this.zlayer = -20;
 }
 
 Craft.prototype.onremoval = function(elementsToPush){
@@ -805,6 +807,7 @@ var drawloop = function() {
     drawBackground(ctx, backgrounds, gameSequence);
 
     /* Draw game elements */
+    gameElements.sort(function(a,b){ return a.zlayer - b.zlayer; });
     for(var i = 0; i < gameElements.length; i++){
         gameElements[i].draw();
     }
