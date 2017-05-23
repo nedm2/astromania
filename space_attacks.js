@@ -25,6 +25,10 @@ var secondsToFrames = function(s){
     return s*frameRate;
 }
 
+var secondsSince = function(e){
+    return (gameCounter - e)/gameRate;
+}
+
 var drawBackground = function(context, backgrounds, gameSequence){
     var level = gameSequence.getLevel();
     if (level != 0)
@@ -265,6 +269,10 @@ var  pawn0Sprites = {
   , 'hitu' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0u.GIF", 40, 40)
   , 'hitr' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0r.GIF", 40, 40)
   , 'hitl' : new Sprite(ctx, loaders, "sprites/pawn/0/hitpawn0l.GIF", 40, 40)
+  , 'expl0': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl0.GIF", 55, 55)
+  , 'expl1': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl1.GIF", 55, 55)
+  , 'expl2': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl2.GIF", 55, 55)
+  , 'expl3': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl3.GIF", 55, 55)
 }
 
 var bulletSprites = {
@@ -300,7 +308,7 @@ Drawable.prototype.inPlayingArea = function(){
 }
 
 Drawable.prototype.isActive = function(){
-    return true;
+    return this.active;
 }
 
 Drawable.prototype.isFriendlyFire = function(){
@@ -398,6 +406,8 @@ var Craft = function(context, position, velocity, health, radius, sprites){
     this.shielded = 0;
     this.mass = 100;
     this.damping = 0.1;
+    this.destroyed = false;
+    this.explosionDuration = 4;
 };
 
 Craft.prototype = new Drawable();
@@ -429,7 +439,21 @@ Craft.prototype.draw = function(direction, prefix){
 
     if (this.shakeCount > 0)
       prefix = 'hit' + prefix;
-    Drawable.prototype.draw.call(this, prefix + direction);
+
+    spritename = prefix+direction;
+
+    if (this.destroyed){
+        if     (secondsSince(this.explosionTime) < this.explosionDuration*1/4)
+            spritename = 'expl0';
+        else if(secondsSince(this.explosionTime) < this.explosionDuration*2/4)
+            spritename = 'expl1';    
+        else if(secondsSince(this.explosionTime) < this.explosionDuration*3/4)
+            spritename = 'expl2';   
+        else
+            spritename = 'expl3';
+    }
+
+    Drawable.prototype.draw.call(this, spritename);
 };
 
 Craft.prototype.updatePosition = function() {
@@ -438,6 +462,9 @@ Craft.prototype.updatePosition = function() {
 
 Craft.prototype.update = function(gameElements, controlElements){
     this.updatePosition();
+    if(this.destroyed && (secondsSince(this.explosionTime) > this.explosionDuration)){
+        this.active = false;
+    }
 };
 
 Craft.prototype.getHealth = function(){
@@ -453,14 +480,23 @@ Craft.prototype.getType = function(){
 };
 
 Craft.prototype.damage = function(d, safeperiod){
-    if (!this.shielded){
-        this.shielded = secondsToTicks(safeperiod);
-        this.shake(secondsToFrames(safeperiod));
+    if (!this.shielded && !this.destroyed){
         this.health = Math.max(0, this.health - d);
-        if (this.health <= 0)
-            this.markInactive();
+        if (this.health <= 0){
+            this.destroy();
+        }
+        else{
+            this.shielded = secondsToTicks(safeperiod);
+            this.shake(secondsToFrames(safeperiod));
+        }
     }
 };
+
+Craft.prototype.destroy = function(){
+    this.destroyed = true;
+    this.explosionTime=gameCounter;
+    this.velocity = new Vector(0,0);
+}
 
 Craft.prototype.onremoval = function(elementsToPush){
     //elementsToPush.push(Explosion(this.context, this.position));
@@ -661,7 +697,7 @@ Ship.prototype.collision = function(o){
 
 /* Pawn */
 
-var Pawn = function(context, radius, sprites, bulletRadius, bulletSprites, 
+var Pawn = function(context, radius, sprites, bulletRadius, bulletSprites,
       position = new Vector(playingAreaWidth/2, playingAreaHeight/2), velocity = new Vector(0, 0), health=100){
     Craft.prototype.constructor.call(this, context, position, velocity, health, radius, sprites);
     this.initialposition = position;
@@ -742,8 +778,10 @@ var collisions = function(gameElements){
                 ge1 = gameElements[i];
                 ge2 = gameElements[j];
                 if(ge1.position.distance(ge2.position) < (ge1.radius + ge2.radius)){
-                    ge1.collision(ge2);
-                    ge2.collision(ge1);
+                    if(!ge1.destroyed && !ge2.destroyed){
+                        ge1.collision(ge2);
+                        ge2.collision(ge1);
+                    }
                 }
             }
         }
