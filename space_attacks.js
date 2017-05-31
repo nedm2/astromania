@@ -415,25 +415,8 @@ Craft.prototype = new Drawable();
 Craft.prototype.constructor = Craft;
 
 Craft.prototype.draw = function(direction, prefix){
-    if (typeof(direction)==='undefined'){
-      var a = this.velocity.angle_rad();
-      if (a > -Math.PI/8 && a < Math.PI/8)
-        var direction = 'r';
-      else if (a > Math.PI/8 && a < Math.PI*3.0/8)
-        var direction = 'ur';
-      else if (a > Math.PI*3.0/8 && a < Math.PI*5.0/8)
-        var direction = 'u';
-      else if (a > Math.PI*5.0/8 && a < Math.PI*7.0/8)
-        var direction = 'ul';
-      else if (a > Math.PI*7.0/8 && a < -Math.PI*7.0/8)
-        var direction = 'l';
-      else if (a > -Math.PI*7.0/8 && a < -Math.PI*5.0/8)
-        var direction = 'dl';
-      else if (a > -Math.PI*5.0/8 && a < -Math.PI*3.0/8)
-        var direction = 'd';
-      else if (a > -Math.PI*3.0/8 && a < -Math.PI*1.0/8)
-        var direction = 'dr';
-    }
+    if (typeof(direction)==='undefined')
+        var direction = vectorToDirection(this.velocity);
 
     if (typeof(prefix)==='undefined')
         prefix = '';
