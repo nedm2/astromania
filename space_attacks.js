@@ -36,7 +36,7 @@ var drawBackground = function(context, backgrounds, gameSequence){
 }
 
 var vectorToDirection = function(v){
-    var a = v.angle_rad();
+    var a = v.theta();
     if (a > -Math.PI/8 && a < Math.PI/8)
         var direction = 'r';
     else if (a > Math.PI/8 && a < Math.PI*3.0/8)

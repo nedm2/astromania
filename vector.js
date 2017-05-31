@@ -30,7 +30,7 @@ Vector.prototype.magnitude = function() {
     return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2))
 };
 
-Vector.prototype.angle_rad = function(){
+Vector.prototype.theta = function(){
     return Math.atan2(this.y, this.x);
 }
 
