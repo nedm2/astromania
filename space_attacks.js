@@ -676,9 +676,8 @@ var HomingPawn = function(context, radius, sprites, bulletRadius, bulletSprites,
       position = new Vector(playingAreaWidth/2, playingAreaHeight/2), velocity = new Vector(0, 0), health=100, target){
     Pawn.prototype.constructor.call(this, context, radius, sprites, bulletRadius, bulletSprites, position, velocity, health);
     this.target = target;
-    this.speed = 3;
-    this.acceleration=0.15;
-    this.resistance = 0.01;
+    this.acceleration=0.4;
+    this.resistance = 0.025;
     this.mass = 100;
 }
 
@@ -733,7 +732,7 @@ var dash = new Dashboard(ctx, shipobj, dashSprites);
 
 /* Build game sequence */
 
-var gameSequence = new GameSequence(1, 0);
+var gameSequence = new GameSequence(1, 2);
 
 /* -- pre pause */
 gameSequence.addStage(1, 0, new GameSequenceEntry(function() {return [];}, secondsToTicks(2)));
