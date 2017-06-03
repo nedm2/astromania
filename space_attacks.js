@@ -117,8 +117,8 @@ $("input").keyup(onkeyup);
 
 /* GameSequenceEntry */
 
-var GameSequenceEntry = function (enemies, prepause){
-    this.enemies = enemies;
+var GameSequenceEntry = function (enemygen, prepause){
+    this.enemygen = enemygen;
     this.prepause = prepause;
     this.postpause = 0;
     this.state = 'unstarted';
@@ -131,8 +131,9 @@ GameSequenceEntry.prototype.action = function(gameElements){
     }
     else if (this.state == 'prepause' && this.timeHasElapsed(this.prepause)){
         this.state = 'waitenemies';
-        for (var i = 0; i < this.enemies.length; i++)
-            gameElements.push(this.enemies[i]);
+        var enemies = this.enemygen();
+        for (var i = 0; i < enemies.length; i++)
+            gameElements.push(enemies[i]);
         this.lastActionTime = gameCounter;
     }
     else if (this.state == 'waitenemies' && noEnemyShips(gameElements)){
@@ -151,6 +152,10 @@ GameSequenceEntry.prototype.stageComplete = function(){
 
 GameSequenceEntry.prototype.timeHasElapsed = function(t){
     return (gameCounter - this.lastActionTime > t)
+}
+
+GameSequenceEntry.prototype.reset = function(){
+    this.state = 'unstarted';
 }
     
 /* ----------------- GameSequenceEntry */
@@ -177,8 +182,8 @@ GameSequence.prototype.advanceStage = function() {
         this.stage = 0;
     }
     else{
-        this.level = 0;
-        this.stage = 0;
+        /* No more stages, just restart the last stage */
+        this.sequence[this.level][this.stage].reset();
     }
 };
 
@@ -731,21 +736,25 @@ var dash = new Dashboard(ctx, shipobj, dashSprites);
 var gameSequence = new GameSequence(1, 0);
 
 /* -- pre pause */
-gameSequence.addStage(1, 0, new GameSequenceEntry([], secondsToTicks(2)));
+gameSequence.addStage(1, 0, new GameSequenceEntry(function() {return [];}, secondsToTicks(2)));
 
 /* -- 4 streght0 pawns */
-var enem = [
-    new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 1*(playingAreaHeight/5)), new Vector(3,0), 3)
-  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 2*(playingAreaHeight/5)), new Vector(3,0), 3)
-  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 3*(playingAreaHeight/5)), new Vector(3,0), 3)
-  , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 4*(playingAreaHeight/5)), new Vector(3,0), 3)
-];
-gameSequence.addStage(1, 1, new GameSequenceEntry(enem, secondsToTicks(0)));
+var enemy11 = function(){
+    return [
+        new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 1*(playingAreaHeight/5)), new Vector(3,0), 3)
+      , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 2*(playingAreaHeight/5)), new Vector(3,0), 3)
+      , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 3*(playingAreaHeight/5)), new Vector(3,0), 3)
+      , new Pawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, 4*(playingAreaHeight/5)), new Vector(3,0), 3)
+    ];
+}
+gameSequence.addStage(1, 1, new GameSequenceEntry(enemy11, secondsToTicks(0)));
 
-var enem1 = [
-    new HomingPawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, playingAreaHeight/2), new Vector(3,0), 100, shipobj)
-];
-gameSequence.addStage(1, 2, new GameSequenceEntry(enem1, secondsToTicks(0)));
+var enemy12 = function(){
+    return [
+        new HomingPawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, playingAreaHeight/2), new Vector(3,0), 10, shipobj)
+    ];
+}
+gameSequence.addStage(1, 2, new GameSequenceEntry(enemy12, secondsToTicks(0)));
 
 /* -------- */
 
