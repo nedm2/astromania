@@ -331,7 +331,6 @@ var Craft = function(context, position, velocity, health, radius, sprites){
     this.health = health;
     this.shielded = 0;
     this.mass = 100;
-    this.damping = 0.1;
     this.destroyed = false;
     this.explosionDuration = 4;
 };
@@ -413,8 +412,6 @@ Craft.prototype.onremoval = function(elementsToPush){
 };
 
 Craft.prototype.momentum = function(o){
-    var t = this.velocity.add(this.position.sub(o.position));
-    this.velocity = t.scale(this.damping);
 }
 
 /* ------ Craft */
@@ -479,6 +476,7 @@ var Ship = function(context, radius, sprites, bulletRadius, bulletSprites){
     this.acceleration=0.5;
     this.impactdamage = 2;
     this.collisionDamageInflicted = 5;
+    this.collset = new Set();
 };
 
 Ship.prototype = new Craft();
@@ -597,10 +595,18 @@ Ship.prototype.isEnemyCraft = function(){
 }
 
 Ship.prototype.collision = function(o){
-    if(o instanceof Pawn){
+    if((o instanceof Pawn) && !(this.collset.has(o))){
         this.damage(o.collisionDamageInflicted, 1);
-        this.momentum(o)
+        /* For calculating this momentum we don't want to affect the pawn velocity so 
+         * it is best to consider it as a stationary object. Need to create a dummy
+         * object with position and velocity to pass in */
+        momentum_oneupdate(this, {position:o.position, velocity:new Vector(0,0), mass:o.mass});
+        this.collset.add(o);
     }
+}
+
+Ship.prototype.nocollision = function(o){
+    this.collset.delete(o);
 }
 
 /* ------ Ship */
@@ -612,6 +618,7 @@ var Pawn = function(context, radius, sprites, bulletRadius, bulletSprites,
     Craft.prototype.constructor.call(this, context, position, velocity, health, radius, sprites);
     this.initialposition = position;
     this.collisionDamageInflicted = 1;
+    this.mass=600;
 }
 
 Pawn.prototype = new Craft();
@@ -692,6 +699,10 @@ var collisions = function(gameElements){
                         ge1.collision(ge2);
                         ge2.collision(ge1);
                     }
+                }
+                else{
+                    ge1.nocollision(ge2);
+                    ge2.nocollision(ge1);
                 }
             }
         }

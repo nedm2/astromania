@@ -34,6 +34,7 @@ Drawable.prototype.isEnemyCraft = function(){
 }
 
 Drawable.prototype.collision = function(){}
+Drawable.prototype.nocollision = function(){}
 
 Drawable.prototype.draw = function(spritename){
 

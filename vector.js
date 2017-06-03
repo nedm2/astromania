@@ -34,6 +34,20 @@ Vector.prototype.theta = function(){
     return Math.atan2(this.y, this.x);
 }
 
+Vector.prototype.alpha = function(v){
+    return v.theta() - this.theta();
+}
+
+Vector.prototype.component = function(v){
+    var alpha = this.alpha(v);
+    alphaMagnitude = Math.cos(alpha)*this.magnitude()
+    return v.unit_vector().scale(alphaMagnitude);
+}
+
+Vector.prototype.rotated = function(theta){
+    return new Vector(this.x*Math.cos(theta) - this.y*Math.sin(theta), this.x*Math.sin(theta) + this.y*Math.cos(theta));
+}
+
 Vector.prototype.unit_vector = function(){
     if (Math.abs(this.x) < tinyFloat && Math.abs(this.y) < tinyFloat)
         return new Vector(0,0);
