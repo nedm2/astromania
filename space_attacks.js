@@ -43,6 +43,25 @@ var vectorToDirection = function(v){
     return direction;
 };
 
+var directionToVector = function(direction){
+    if (direction == 'r')
+        return (new Vector(1, 0)).unit_vector();
+    else if (direction == 'dr')
+        return (new Vector(1, -1)).unit_vector();
+    else if (direction == 'd')
+        return (new Vector(0, -1)).unit_vector();
+    else if (direction == 'dl')
+        return (new Vector(-1, -1)).unit_vector();
+    else if (direction == 'l')
+        return (new Vector(-1, 0)).unit_vector();
+    else if (direction == 'ul')
+        return (new Vector(-1, 1)).unit_vector();
+    else if (direction == 'u')
+        return (new Vector(0, 1)).unit_vector();
+    else /* ur */
+        return (new Vector(1, 1)).unit_vector();
+}
+
 /* Keyboard Input */
 
 var keycodes = {
@@ -326,6 +345,7 @@ var Craft = function(context, position, velocity, health, radius, sprites){
     this.mass = 100;
     this.destroyed = false;
     this.explosionDuration = 4;
+    this.forces = new Vector(0, 0);
 };
 
 Craft.prototype = new Drawable();
@@ -361,11 +381,13 @@ Craft.prototype.updatePosition = function() {
     this.position = this.position.add(this.velocity);
 };
 
-Craft.prototype.update = function(gameElements, controlElements){
+Craft.prototype.update = function(){
     this.updatePosition();
     if(this.destroyed && (secondsSince(this.explosionTime) > this.explosionDuration)){
         this.active = false;
     }
+    if(this.shielded > 0)
+        this.shielded -= 1
 };
 
 Craft.prototype.getHealth = function(){
@@ -422,7 +444,7 @@ var Bullet = function(owner, context, position, velocity, radius, sprites, power
 Bullet.prototype = new Drawable();
 Bullet.prototype.constructor = Bullet;
 
-Bullet.prototype.update = function(gameElements, controlElements){
+Bullet.prototype.update = function(){
     this.position = this.position.add(this.velocity);
 }
 
@@ -458,7 +480,6 @@ var Ship = function(context, radius, sprites, bulletRadius, bulletSprites){
       new Vector(0, 0), 100, radius, sprites);
     this.key_sensitivity = 0.1;
     this.resistance = 0.008;
-    this.forces = new Vector(0, 0);
     this.fireFrequency = gameRate;
     this.bulletRadius = bulletRadius;
     this.bulletSprites = bulletSprites;
@@ -534,12 +555,11 @@ Ship.prototype.updateForces = function(){
 };
 
 Ship.prototype.updateVelocity = function(){
-    this.velocity = this.velocity.add(this.forces.scale(this.acceleration));
+    this.velocity = this.velocity.add(this.forces.unit_vector().scale(this.acceleration));
     this.velocity = this.velocity.sub(this.velocity.scale(this.resistance));
 };
 
-Ship.prototype.updatePosition = function(){
-    Craft.prototype.updatePosition.call(this);
+Ship.prototype.screenWrap = function(){
     if (this.position.get_x() < 0)
         this.position.x = playingAreaWidth;
     if (this.position.get_x() > playingAreaWidth)
@@ -547,7 +567,7 @@ Ship.prototype.updatePosition = function(){
     if (this.position.get_y() < 0)
         this.position.y = playingAreaHeight;
     if (this.position.get_y() > playingAreaHeight)
-      this.position.y = 0;
+        this.position.y = 0;
 };
 
 Ship.prototype.fire = function(gameElements){
@@ -562,13 +582,12 @@ Ship.prototype.updateFire = function(){
 };
 
 Ship.prototype.update = function(){
+    Craft.prototype.update.call(this);
     this.updateDirection();
     this.updateForces();
     this.updateVelocity();
-    this.updatePosition();
+    this.screenWrap();
     this.updateFire(gameElements);
-    if (this.shielded > 0)
-        this.shielded -= 1;
 };
 
 Ship.prototype.getScore = function(){
@@ -588,7 +607,12 @@ Ship.prototype.isEnemyCraft = function(){
 }
 
 Ship.prototype.collision = function(o){
-    if((o instanceof Pawn) && !(this.collset.has(o))){
+    if((o instanceof HomingPawn) && !(this.collset.has(o))){
+        this.damage(o.collisionDamageInflicted, 1);
+        momentum_twoupdate(this, o);
+        this.collset.add(o);
+    }
+    else if((o instanceof Pawn) && !(this.collset.has(o))){
         this.damage(o.collisionDamageInflicted, 1);
         /* For calculating this momentum we don't want to affect the pawn velocity so 
          * it is best to consider it as a stationary object. Need to create a dummy
@@ -615,15 +639,13 @@ var Pawn = function(context, radius, sprites, bulletRadius, bulletSprites,
 }
 
 Pawn.prototype = new Craft();
-Pawn.prototype.constructor = Craft;
+Pawn.prototype.constructor = Pawn;
 
-Pawn.prototype.update = function(gameElements, controlElements){
-    Craft.prototype.update.call(this, gameElements, controlElements);
+Pawn.prototype.update = function(){
+    Craft.prototype.update.call(this);
     if(!this.inPlayingArea()){
         this.position = this.initialposition
     }
-    if(this.shielded > 0)
-        this.shielded -= 1
 }
 
 Pawn.prototype.isEnemyCraft = function(){
@@ -643,6 +665,49 @@ Pawn.prototype.collision = function(o){
 
 /* ------ Pawn */
 
+/* HomingPawn */
+
+var HomingPawn = function(context, radius, sprites, bulletRadius, bulletSprites,
+      position = new Vector(playingAreaWidth/2, playingAreaHeight/2), velocity = new Vector(0, 0), health=100, target){
+    Pawn.prototype.constructor.call(this, context, radius, sprites, bulletRadius, bulletSprites, position, velocity, health);
+    this.target = target;
+    this.speed = 3;
+    this.acceleration=0.15;
+    this.resistance = 0.01;
+    this.mass = 100;
+}
+
+HomingPawn.prototype = new Pawn();
+HomingPawn.prototype.constructor = HomingPawn;
+
+HomingPawn.prototype.update = function(){
+    Craft.prototype.update.call(this);
+
+    if(!this.destroyed){
+        /* Find vector from this to target */
+        var dir = this.target.position.sub(this.position);
+
+        /* Snap dir vector to 45 degree increment */
+        var snapdir = directionToVector(vectorToDirection(dir));
+
+        /* Apply a force in the snapped direction */
+        this.forces = snapdir.unit_vector();
+
+        this.updateVelocity();
+    }
+}
+
+HomingPawn.prototype.updateVelocity = function(){
+    this.velocity = this.velocity.add(this.forces.unit_vector().scale(this.acceleration));
+    this.velocity = this.velocity.sub(this.velocity.scale(this.resistance));
+};
+
+HomingPawn.prototype.draw = function(){
+    Craft.prototype.draw.call(this, vectorToDirection(this.forces));
+}
+
+/* ------ Pawn */
+
 var noEnemyShips = function(gameElems){
     for(var i = 0; i < gameElements.length; i++){
         if(gameElements[i].isEnemyCraft())
@@ -650,6 +715,16 @@ var noEnemyShips = function(gameElems){
     }
     return true
 }
+
+/* Create game elements */
+
+var gameElements = [];
+shipobj = new Ship(ctx, 25, shipSprites, 5, bulletSprites);
+gameElements.push(shipobj);
+    
+var dash = new Dashboard(ctx, shipobj, dashSprites);
+
+/* -------- */
 
 /* Build game sequence */
 
@@ -667,13 +742,10 @@ var enem = [
 ];
 gameSequence.addStage(1, 1, new GameSequenceEntry(enem, secondsToTicks(0)));
 
-/* Create game elements */
-
-var gameElements = [];
-shipobj = new Ship(ctx, 25, shipSprites, 5, bulletSprites);
-gameElements.push(shipobj);
-    
-var dash = new Dashboard(ctx, shipobj, dashSprites);
+var enem1 = [
+    new HomingPawn(ctx, 22, pawn0Sprites, 0, null, new Vector(1, playingAreaHeight/2), new Vector(3,0), 100, shipobj)
+];
+gameSequence.addStage(1, 2, new GameSequenceEntry(enem1, secondsToTicks(0)));
 
 /* -------- */
 
