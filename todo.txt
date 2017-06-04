@@ -3,3 +3,5 @@ Shake count based on time, rather than frame count
 Give bullets same momentum as ship??
 
 Scale damage based on relative speed of objects
+
+Move fire logic to Craft

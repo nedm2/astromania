@@ -45,6 +45,10 @@ var HomingPawn = function(context, radius, sprites, bulletRadius, bulletSprites,
     this.acceleration=0.4;
     this.resistance = 0.025;
     this.mass = 100;
+    this.direction = this.velocity.unit_vector();
+    this.bulletSpeed = 15;
+    this.bulletSprites = bulletSprites;
+    this.bulletRadius =  bulletRadius;
 }
 
 HomingPawn.prototype = new Pawn();
@@ -62,8 +66,12 @@ HomingPawn.prototype.update = function(){
 
         /* Apply a force in the snapped direction */
         this.forces = snapdir.unit_vector();
+        this.direction = this.forces;
 
         this.updateVelocity();
+
+        if (gameCounter%100 == 0)
+            this.fire()
     }
 }
 
@@ -75,5 +83,9 @@ HomingPawn.prototype.updateVelocity = function(){
 HomingPawn.prototype.draw = function(){
     Craft.prototype.draw.call(this, vectorToDirection(this.forces));
 }
+
+Pawn.prototype.fire = function(){
+    gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites, 1, false));
+};
 
 /* ------ Pawn */

@@ -7,6 +7,7 @@ var Bullet = function(owner, context, position, velocity, radius, sprites, power
     this.velocity = velocity
     this.power = power
     this.enemyfire = enemyfire
+    this.collisionDamageInflicted == 1;
 }
 
 Bullet.prototype = new Drawable();
@@ -33,7 +34,10 @@ Bullet.prototype.isFriendlyFire = function(){
 }
 
 Bullet.prototype.collision = function(o){
-    if(o instanceof Pawn){
+    if((o instanceof Pawn) && (this.owner instanceof Ship)){
+        this.markInactive();
+    }
+    else if((o instanceof Ship) && (this.owner instanceof Pawn)){
         this.markInactive();
     }
 }

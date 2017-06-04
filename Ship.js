@@ -96,7 +96,7 @@ Ship.prototype.screenWrap = function(){
         this.position.y = 0;
 };
 
-Ship.prototype.fire = function(gameElements){
+Ship.prototype.fire = function(){
     gameElements.push(new Bullet(this, this.context, this.position, this.direction.scale(this.bulletSpeed), this.bulletRadius, this.bulletSprites, 1, false));
 };
 
@@ -113,7 +113,7 @@ Ship.prototype.update = function(){
     this.updateForces();
     this.updateVelocity();
     this.screenWrap();
-    this.updateFire(gameElements);
+    this.updateFire();
 };
 
 Ship.prototype.getScore = function(){
@@ -145,6 +145,9 @@ Ship.prototype.collision = function(o){
          * object with position and velocity to pass in */
         momentum_oneupdate(this, {position:o.position, velocity:new Vector(0,0), mass:o.mass});
         this.collset.add(o);
+    }
+    else if((o instanceof Bullet) && (o.owner instanceof Pawn)){
+        this.damage(o.collisionDamageInflicted, 1);
     }
 }
 
