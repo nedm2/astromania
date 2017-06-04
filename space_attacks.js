@@ -182,8 +182,13 @@ var drawloop = function() {
         gameElements[i].draw();
     }
 
-    // Draw the dashboard
+    /* Draw the dashboard */
     dash.draw();
+
+    /* Draw an extra white bar at the right hand end to cover any 
+     * elements that stray beyond the end of the playing area */
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(windowScaling*frameWidth,0,windowScaling*(frameWidth+50),frameHeight);
 
 };
 
@@ -210,7 +215,6 @@ var gameloop = function() {
 
 var curTime = 0;
 var frames = 0
-
 var showFrameRate = function() {
     var d = new Date();
     var t = Math.floor(d.getTime()/1000);
