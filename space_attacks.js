@@ -81,7 +81,8 @@ gameSequence.addStage(1, 1, new GameSequenceEntry(enemy11, secondsToTicks(0)));
 
 var enemy12 = function(){
     return [
-        new HomingPawn(ctx, 22, pawn0Sprites, 5, bulletSprites, new Vector(1, playingAreaHeight/2), new Vector(3,0), 50, shipobj)
+        new HomingPawn(ctx, 22, pawn0Sprites, 5, bulletSprites, new Vector(1,   playingAreaHeight/3), new Vector(3,0), 50, shipobj)
+      , new HomingPawn(ctx, 22, pawn0Sprites, 5, bulletSprites, new Vector(1, 2*playingAreaHeight/3), new Vector(3,0), 50, shipobj)
     ];
 }
 gameSequence.addStage(1, 2, new GameSequenceEntry(enemy12, secondsToTicks(0)));

@@ -58,21 +58,47 @@ HomingPawn.prototype.update = function(){
     Craft.prototype.update.call(this);
 
     if(!this.destroyed){
-        /* Find vector from this to target */
-        var dir = this.target.position.sub(this.position);
-
-        /* Snap dir vector to 45 degree increment */
-        var snapdir = directionToVector(vectorToDirection(dir));
-
-        /* Apply a force in the snapped direction */
-        this.forces = snapdir.unit_vector();
-        this.direction = this.forces;
-
+        this.updateForces();
+        this.direction = directionToVector(vectorToDirection(this.target.position.sub(this.position).unit_vector()));
         this.updateVelocity();
 
         if (gameCounter%100 == 0)
             this.fire()
     }
+}
+
+HomingPawn.prototype.updateForces = function(){
+    /* Find vector from this to target */
+    var thistotarget = this.target.position.sub(this.position).unit_vector();
+
+    /* Calculate repulsive force For all other craft, prevents craft from 
+     * constantly converging on each other */
+    var repulseResultant = new Vector(0, 0);
+    var numcraft = 0;
+    for(var i = 0; i < gameElements.length; i++){
+        if((gameElements[i] instanceof Craft) && !(gameElements[i] == this)){
+
+            /* Find vector from the other craft to this */
+            var crafttothis = this.position.sub(gameElements[i].position);
+
+            /* Calculate repulsive force, inverse to cube of distance, add it to the resultant */
+            var repulsiveForce = crafttothis.unit_vector().scale(4.0/Math.pow(crafttothis.magnitude(), 0.3));
+            repulseResultant = repulseResultant.add(repulsiveForce);
+
+            numcraft++;
+        }
+    }
+    /* Scale the repulsive force by the inverse of the number of contributing elements */
+    repulseResultant = repulseResultant.scale(1.0/numcraft);
+
+    /* Combine repulsive and attractive elements */
+    var resultant = thistotarget.add(repulseResultant);
+
+    /* Snap dir vector to 45 degree increment */
+    var snapdir = directionToVector(vectorToDirection(resultant));
+
+    /* Apply a force in the snapped direction */
+    this.forces = snapdir.unit_vector()
 }
 
 HomingPawn.prototype.updateVelocity = function(){
@@ -81,7 +107,7 @@ HomingPawn.prototype.updateVelocity = function(){
 };
 
 HomingPawn.prototype.draw = function(){
-    Craft.prototype.draw.call(this, vectorToDirection(this.forces));
+    Craft.prototype.draw.call(this, vectorToDirection(this.direction));
 }
 
 Pawn.prototype.fire = function(){
