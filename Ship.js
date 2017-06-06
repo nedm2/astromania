@@ -147,7 +147,7 @@ Ship.prototype.collision = function(o){
         this.collset.add(o);
     }
     else if((o instanceof Bullet) && (o.owner instanceof Pawn)){
-        this.damage(o.collisionDamageInflicted, 1);
+        this.damage(o.power, 1);
     }
 }
 

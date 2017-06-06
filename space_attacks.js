@@ -6,6 +6,12 @@ var backgrounds = {
   , 2: new Drawable(ctx, new Vector(0, frameHeight), 0, {'bg': backgroundSprites[2]}, true)
 };
 
+var drawBackground = function(context, backgrounds, gameSequence){
+    var level = gameSequence.getLevel();
+    if (level != 0)
+        backgrounds[level].draw();
+}
+
 /* ---------- */
 
 /* Dashboard */

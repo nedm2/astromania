@@ -11,12 +11,6 @@ var secondsSince = function(e){
     return (gameCounter - e)/gameRate;
 }
 
-var drawBackground = function(context, backgrounds, gameSequence){
-    var level = gameSequence.getLevel();
-    if (level != 0)
-        backgrounds[level].draw();
-}
-
 var vectorToDirection = function(v){
     var a = v.theta();
     if (a > -Math.PI/8 && a < Math.PI/8)

@@ -7,7 +7,6 @@ var Bullet = function(owner, context, position, velocity, radius, sprites, power
     this.velocity = velocity
     this.power = power
     this.enemyfire = enemyfire
-    this.collisionDamageInflicted == 1;
 }
 
 Bullet.prototype = new Drawable();
