@@ -170,9 +170,6 @@ var gameloop = function() {
             gameSequence.advanceStage();
     }
     else{
-        ctx.fillStyle = "#FF0000";
-        ctx.font = Math.round(80*windowScaling) + "px monospace";
-        ctx.fillText("GAME OVER",(frameWidth/2 - 200)*windowScaling,(frameHeight/2)*windowScaling);
     }
 
 };
@@ -191,7 +188,7 @@ var showFrameRate = function() {
 };
 
 var drawprocessing = false;
-setInterval(function(){
+var dodrawing = function(){
     if(resourcesLoaded && !drawprocessing){
         drawprocessing = true;
         drawloop();
@@ -202,7 +199,9 @@ setInterval(function(){
     else if(drawprocessing){
         console.log("Can't achieve draw framerate");
     }
-}, frameInterval);
+    window.requestAnimationFrame(dodrawing);
+}
+window.requestAnimationFrame(dodrawing);
 
 var gameprocessing = false;
 setInterval(function(){
