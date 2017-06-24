@@ -146,6 +146,12 @@ var drawloop = function() {
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(windowScaling*frameWidth,0,windowScaling*(frameWidth+50),frameHeight);
 
+    if(!shipobj.isActive()){
+        ctx.fillStyle = "#FF0000";
+        ctx.font = Math.round(80*windowScaling) + "px courier monospace";
+        ctx.fillText("GAME OVER",(frameWidth/2 - 200)*windowScaling,(frameHeight/2)*windowScaling);
+    }
+
 };
 
 var gameloop = function() {
