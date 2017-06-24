@@ -148,7 +148,7 @@ var drawloop = function() {
 
     if(!shipobj.isActive()){
         ctx.fillStyle = "#FF0000";
-        ctx.font = Math.round(80*windowScaling) + "px courier monospace";
+        ctx.font = Math.round(80*windowScaling) + "px 'Courier New'";
         ctx.fillText("GAME OVER",(frameWidth/2 - 200)*windowScaling,(frameHeight/2)*windowScaling);
     }
 
