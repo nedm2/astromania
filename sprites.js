@@ -60,6 +60,10 @@ var shipSprites = {
   , 'hitu'  : new Sprite(ctx, loaders, "sprites/ship/hitshipu.GIF", 50, 50)
   , 'hitul' : new Sprite(ctx, loaders, "sprites/ship/hitshipul.GIF", 50, 50)
   , 'hitl'  : new Sprite(ctx, loaders, "sprites/ship/hitshipl.GIF", 50, 50)
+  , 'expl0': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl0.GIF", 55, 55)
+  , 'expl1': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl1.GIF", 55, 55)
+  , 'expl2': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl2.GIF", 55, 55)
+  , 'expl3': new Sprite(ctx, loaders, "sprites/pawn/expl/pawnexpl3.GIF", 55, 55)
 };
 
 var  pawn0Sprites = {

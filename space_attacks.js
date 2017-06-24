@@ -150,22 +150,30 @@ var drawloop = function() {
 
 var gameloop = function() {
 
-    /* Update game element positions */
-    var newGameElements = [];
-    for(var i = 0; i < gameElements.length; i++){
-        gameElements[i].update();
-        if(gameElements[i].isActive())
-            newGameElements.push(gameElements[i]);
+    if(shipobj.isActive()){
+
+        /* Update game element positions */
+        var newGameElements = [];
+        for(var i = 0; i < gameElements.length; i++){
+            gameElements[i].update();
+            if(gameElements[i].isActive())
+                newGameElements.push(gameElements[i]);
+        }
+        gameElements = newGameElements;
+
+        /* Check for collisions */
+        collisions(gameElements)
+
+        /* Advance game sequence */
+        gameSequence.action(gameElements);
+        if (gameSequence.stageComplete())
+            gameSequence.advanceStage();
     }
-    gameElements = newGameElements;
-
-    /* Check for collisions */
-    collisions(gameElements)
-
-    /* Advance game sequence */
-    gameSequence.action(gameElements);
-    if (gameSequence.stageComplete())
-        gameSequence.advanceStage();
+    else{
+        ctx.fillStyle = "#FF0000";
+        ctx.font = Math.round(80*windowScaling) + "px monospace";
+        ctx.fillText("GAME OVER",(frameWidth/2 - 200)*windowScaling,(frameHeight/2)*windowScaling);
+    }
 
 };
 
