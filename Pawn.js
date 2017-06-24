@@ -82,7 +82,7 @@ HomingPawn.prototype.updateForces = function(){
             var crafttothis = this.position.sub(gameElements[i].position);
 
             /* Calculate repulsive force, inverse to cube of distance, add it to the resultant */
-            var repulsiveForce = crafttothis.unit_vector().scale(4.0/Math.pow(crafttothis.magnitude(), 0.3));
+            var repulsiveForce = crafttothis.unit_vector().scale(10000000.0/Math.pow(crafttothis.magnitude(), 3));
             repulseResultant = repulseResultant.add(repulsiveForce);
 
             numcraft++;
@@ -94,11 +94,8 @@ HomingPawn.prototype.updateForces = function(){
     /* Combine repulsive and attractive elements */
     var resultant = thistotarget.add(repulseResultant);
 
-    /* Snap dir vector to 45 degree increment */
-    var snapdir = directionToVector(vectorToDirection(resultant));
-
-    /* Apply a force in the snapped direction */
-    this.forces = snapdir.unit_vector()
+    /* Apply a force in the resultant direction */
+    this.forces = resultant.unit_vector()
 }
 
 HomingPawn.prototype.updateVelocity = function(){

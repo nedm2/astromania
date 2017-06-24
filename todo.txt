@@ -5,3 +5,5 @@ Give bullets same momentum as ship??
 Scale damage based on relative speed of objects
 
 Move fire logic to Craft
+
+Add mild force to pawns to align to 45 degree increments around target
