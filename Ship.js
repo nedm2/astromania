@@ -134,12 +134,12 @@ Ship.prototype.isEnemyCraft = function(){
 
 Ship.prototype.collision = function(o){
     if((o instanceof HomingPawn) && !(this.collset.has(o))){
-        this.damage(o.collisionDamageInflicted, 1);
+        this.damage(o.collisionDamageInflicted, 0);
         momentum_twoupdate(this, o);
         this.collset.add(o);
     }
     else if((o instanceof Pawn) && !(this.collset.has(o))){
-        this.damage(o.collisionDamageInflicted, 1);
+        this.damage(o.collisionDamageInflicted, 0);
         /* For calculating this momentum we don't want to affect the pawn velocity so 
          * it is best to consider it as a stationary object. Need to create a dummy
          * object with position and velocity to pass in */
@@ -147,7 +147,7 @@ Ship.prototype.collision = function(o){
         this.collset.add(o);
     }
     else if((o instanceof Bullet) && (o.owner instanceof Pawn)){
-        this.damage(o.power, 1);
+        this.damage(o.power, 0);
     }
 }
 

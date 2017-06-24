@@ -66,15 +66,15 @@ Craft.prototype.getType = function(){
     return 'craft';
 };
 
-Craft.prototype.damage = function(d, safeperiod){
+Craft.prototype.damage = function(d, shieldperiod){
     if (!this.shielded && !this.destroyed){
         this.health = Math.max(0, this.health - d);
         if (this.health <= 0){
             this.destroy();
         }
         else{
-            this.shielded = secondsToTicks(safeperiod);
-            this.shake(secondsToFrames(safeperiod));
+            this.shielded = secondsToTicks(shieldperiod);
+            this.shake(secondsToFrames(1));
         }
     }
 };

@@ -26,11 +26,11 @@ Pawn.prototype.isEnemyCraft = function(){
 Pawn.prototype.collision = function(o){
     if(o instanceof Bullet){
         if(o.owner instanceof Ship){
-            this.damage(o.power, 1);
+            this.damage(o.power, 0);
         }
     }
     else if(o instanceof Ship){
-        this.damage(o.collisionDamageInflicted, 1);
+        this.damage(o.collisionDamageInflicted, 0);
     }
 }
 
