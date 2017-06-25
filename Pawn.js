@@ -94,6 +94,14 @@ HomingPawn.prototype.updateForces = function(){
     /* Combine repulsive and attractive elements */
     var resultant = thistotarget.add(repulseResultant);
 
+    /* Apply a rotational force to align the pawn to a 45 degree angle 
+     * around the target. */
+    var targettothis = this.position.sub(this.target.position).unit_vector();
+    var closestSnap = getClosestSnapVector(targettothis);
+    var normaldir = targettothis.getNormalTowards(closestSnap);
+    resultant = resultant.add(normaldir.unit_vector().scale(0.01));
+    
+
     /* Apply a force in the resultant direction */
     this.forces = resultant.unit_vector()
 }

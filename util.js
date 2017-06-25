@@ -52,3 +52,36 @@ var directionToVector = function(direction){
     else /* ur */
         return (new Vector(1, 1)).unit_vector();
 }
+
+/* Returns the two vectors at 45 degree increments around
+ * the origin which surround the vector v */
+var getSurroundingSnapVectors = function(v){
+    var a = v.theta();
+    if (a >= 0 && a < Math.PI/4)
+        return [(new Vector(1, 0)).unit_vector(), (new Vector(1, 1)).unit_vector()];
+    else if (a >= Math.PI/4 && a < Math.PI/2)
+        return [(new Vector(1, 1)).unit_vector(), (new Vector(0, 1)).unit_vector()];
+    else if (a >= Math.PI/2 && a < Math.PI*3.0/4)
+        return [(new Vector(0, 1)).unit_vector(), (new Vector(-1, 1)).unit_vector()];
+    else if (a >= Math.PI*3.0/4 && a < Math.PI)
+        return [(new Vector(-1, 1)).unit_vector(), (new Vector(-1, 0)).unit_vector()];
+    else if (a == Math.PI || a < -Math.PI*3.0/4)
+        return [(new Vector(-1, 0)).unit_vector(), (new Vector(-1, -1)).unit_vector()];
+    else if (a >= -Math.PI*3.0/4 && a < -Math.PI/2)
+        return [(new Vector(-1, -1)).unit_vector(), (new Vector(0, -1)).unit_vector()];
+    else if (a >= -Math.PI/2 && a < -Math.PI/4)
+        return [(new Vector(0, -1)).unit_vector(), (new Vector(1, -1)).unit_vector()];
+    else
+        return [(new Vector(1, -1)).unit_vector(), (new Vector(1, 0)).unit_vector()];
+}
+
+var getClosestSnapVector = function(v){
+    var surroundingSnapVectors = getSurroundingSnapVectors(v);
+    var s0alpha = Math.abs(surroundingSnapVectors[0].min_alpha(v));
+    var s1alpha = Math.abs(surroundingSnapVectors[1].min_alpha(v));
+    if(s0alpha > 1)
+        console.log(Math.abs(surroundingSnapVectors[0].min_alpha(v)),Math.abs(surroundingSnapVectors[1].min_alpha(v)));
+    if (s0alpha < s1alpha) return surroundingSnapVectors[0];
+    else                   return surroundingSnapVectors[1];
+}
+

@@ -38,6 +38,19 @@ Vector.prototype.alpha = function(v){
     return v.theta() - this.theta();
 }
 
+Vector.prototype.min_alpha = function(v){
+    var a = this.alpha(v);
+    if (a > Math.PI){
+        return a - 2*Math.PI;
+    }
+    else if (a < -Math.PI){
+        return a + 2*Math.PI;
+    }
+    else {
+        return a;
+    }
+}
+
 Vector.prototype.component = function(v){
     var alpha = this.alpha(v);
     alphaMagnitude = Math.cos(alpha)*this.magnitude()
@@ -46,6 +59,14 @@ Vector.prototype.component = function(v){
 
 Vector.prototype.rotated = function(theta){
     return new Vector(this.x*Math.cos(theta) - this.y*Math.sin(theta), this.x*Math.sin(theta) + this.y*Math.cos(theta));
+}
+
+Vector.prototype.getNormalTowards = function(v){
+    var a = this.min_alpha(v);
+    if(a > 0) // clockwise
+        return this.rotated(Math.PI/2);
+    else      // anti-clockwise
+        return this.rotated(-Math.PI/2);
 }
 
 Vector.prototype.unit_vector = function(){
